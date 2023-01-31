@@ -1,5 +1,5 @@
 # ICMR-AIIMS-internship
-code used in RNA-Seq data analysis (analysis was done on ICMR'server at ICMR-AIIMS Computation Genomics Center)
+code used in RNA-Seq data analysis (analysis was done on ICMR's server at ICMR-AIIMS Computation Genomics Center)
 
 Aim: To prove that Covid-19 can lead to neurodegenerative disorders.
 Hypothesis: We are trying to prove here that Covid-19 can affect the brain tissues which can lead to any neurodegenerative disorder, 
