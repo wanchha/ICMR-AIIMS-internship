@@ -1,0 +1,96 @@
+#Degs analysis with Balgown (R package)
+
+library(ballgown)
+library(ggplot2)
+library(cowplot)
+setwd("../project_data/python_testing/assembly/map/ballgown/data/")
+
+pheno_dat <- read.csv("../assembly/map/ballgown/new2_phenodata.csv")
+> bg <- ballgown(dataDir="../assembly/map/ballgown/data/",samplePattern="SRR",pData=pheno_dat)
+
+bg <- ballgown(dataDir="../project_data/python_testing/assembly/map/ballgown/data/",samplePattern="SRR",pData=pheno_dat)
+
+head(gexpr(bg), 2)
+
+library(RSkittleBrewer)
+library(genefilter)
+library(dplyr)
+library(devtools)
+
+bg_filt <- subset(bg, "rowVars(texpr(bg)) >1",genomesubset =TRUE)
+
+bg_filt
+
+head(pData(bg_filt), 3)
+
+result_transcript <- stattest(bg_filt,
++ feature = "transcript",
++ covariate = "SEX",
++ adjustvars = c("CLINICAL_CONDITION"),
++ getFC=TRUE,
++ meas="FPKM")
+
+head(result_transcript)
+
+results_transcripts <- data.frame(geneNames = geneNames(bg_filt),
++ geneIDs = geneIDs(bg_filt), condition= 
++ result_transcript)
+
+head(results_transcripts)
+
+table(results_transcripts$pval < 0.05)
+
+result_transcript %>% filter(pval < 0.05)/ result_transcript %>% filter(qval < 0.05)
+
+> results_transcripts$mean <- rowMeans(texpr(bg_filt))
+
+pdf("mplot.pdf")
+
+ggplot(result_transcript, aes(log2(mean), log2(fc), colour = pval<0.05)) +
++ scale_color_manual(values=c("#999999", "#FF0000")) +
++ geom_point() +
++ geom_hline(yintercept=0)
+
+ dev.off()
+
+#to mention down and up regulated Degs
+
+library(ggplot2)
+library(ggrepel)
+library(dplyr)
+de_genes <- read.csv("../assembly/map/ballgown/data/gene_names_trans_p_value.csv")
+ggplot(data=de_genes, aes(x=log(fc), y=pval)) + geom_point()
+p <- ggplot(data=de_genes, aes(x=log(fc), y=-log10(pval))) + geom_point() + theme_minimal()
+p2 <- p + geom_vline(xintercept=c(-0.6, 0.6), col="red") +
+geom_hline(yintercept=-log10(0.05), col="red")
+de_genes$diffexpressed <- "NO"
+logfc <- log(de_genes$fc)
+de_genes$diffexpressed[logfc > 1.5 & de_genes$pval < 0.05] <- "UP"
+de_genes$diffexpressed[logfc < -1.5 & de_genes$pval < 0.05] <- "DOWN"
+unique(de_genes$diffexpressed)
+[1] "NO"   "UP"   "DOWN"
+p <- ggplot(data=de_genes, aes(x=logfc, y=-log10(pval), col=diffexpressed)) + geom_point() + theme_minimal()
+> p
+> p2 <- p + geom_vline(xintercept=c(-0.6, 0.6), col="red") +
++ geom_hline(yintercept=-log10(0.05), col="red")
+> p3 <- p2 + scale_color_manual(values=c("blue", "black", "red"))
+> mycolors <- c("blue", "red", "black")
+> p3 <- p2 + scale_colour_manual(values = mycolors)
+> de_genes$delabel <- NA
+> de_genes$delabel[de_genes$diffexpressed != "NO"] <- de_genes$geneNames[de_genes$diffexpressed != "NO"]
+> ggplot(data=de_genes, aes(x=logfc, y=-log10(pval), col=diffexpressed, label=delabel)) +
++ geom_point() +
++ theme_minimal() +
++ geom_text()
+pdf("valcano_plot.pdf")
+> ggplot(data=de_genes, aes(x=logfc, y=-log10(pval), col=diffexpressed, label=delabel)) +
++ geom_point() +
++ theme_minimal() +
++ geom_text_repel() +
++ scale_color_manual(values=c("blue", "black", "red")) +
++ geom_vline(xintercept=c(-0.6, 0.6), col="red") +
++ geom_hline(yintercept=-log10(0.05), col="red")
+Warning messages:
+1: Removed 1395 rows containing missing values (geom_text_repel).
+2: ggrepel: 13 unlabeled data points (too many overlaps). Consider increasing max.overlaps
+> dev.off()
